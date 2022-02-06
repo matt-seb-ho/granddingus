@@ -2,7 +2,8 @@
 let isRecording = false;
 let socket;
 let recorder;
-let activation = "not_an_actual_word_lol";
+let activation = "novel";
+let tts = new SpeechSynthesisUtterance();
 
 // runs real-time transcription and handles global variables
 const run = async () => {
@@ -36,12 +37,14 @@ const run = async () => {
       if (res.message_type === 'FinalTranscript') {
         const text = res.text ? res.text.toLowerCase().replace(/[^\w\s]/gi, '') : '';
         console.log(text);
-        if (text.includes("set activation to")) {
-          activation = text.replace("set activation to", "").trim();
+        if (text.includes("your name is")) {
+          activation = text.replace("your name is", "").trim();
           console.log(activation);
-          chrome.storage.local.set({ "activation": activation });
+          tts.text = "please call me " + activation;
+          window.speechSynthesis.speak(tts);
+          tts.text = "";
         } else if (text.includes(activation)) {
-          handleText(text);
+          handleText(text.substring(activation.length).trim());
         }
       }
     };
@@ -91,17 +94,41 @@ const run = async () => {
 
 const handleText = (text) => {
   const play_pause = document.querySelector('video');
-  const vid_vol = document.querySelector('.video-stream');
 
   if (text.includes("pause")) {
     play_pause.pause();
+    tts.text = "video paused";
   } else if (text.includes("play")) {
     play_pause.play();
-  } else if (text.includes("volume down")) {
-    vid_vol.volume = Math.max(0, vid_vol.volume - 0.1);
-  } else if (text.includes("volume up")) {
-    vid_vol.volume = Math.min(1, vid_vol.volume + 0.1);
+    tts.text = "video resumed";
+  } else if (text.includes("search for")) {
+    window.open("https://www.youtube.com/results?search_query=" + text.replace("search for", "").replace(" ", "+").trim());
+    tts.text = "searching on youtube " + text.replace("searching for", "").trim();
+  } else if (text.includes("next video")) {
+    window.open(document.querySelector("a#thumbnail[rel=\"nofollow\"]").href);
+    tts.text = "playing next video";
+  } else if (text.includes("google search for")) {
+    window.open("https://www.google.com/search?q=" + text.replace("google search for", "").replace(" ", "+").trim());
+    tts.text = "searching on google " + text.replace("google search for", "").trim();
+  } else if (text.includes("how do i")) {
+    window.open("https://stackoverflow.com/search?q=" + text.replace("how do i", "").replace(" ", "+").trim());
+    tts.text = "searching on stackoverflow " + text.replace("how do i", "").trim();
+  } else if (text.includes("full screen")) {
+    document.querySelector("button[title=\"Full screen (f)\"]").click();
+    tts.text = "entering full screen";
+  } else if (text.includes("sound off")) {
+    document.querySelector("button[title=\"Mute (m)\"]").click();
+    tts.text = "turning sound off";
+  } else if (text.includes("sound on")) {
+    document.querySelector("button[title=\"Unmute (m)\"]").click();
+    tts.text = "turning sound on";
+  } else if (text.includes("subtitles")) {
+    document.querySelector("button[title=\"Subtitles/closed captions (c)\"]").click();
+    tts.text = "toggling subtitles";
   }
+
+  window.speechSynthesis.speak(tts);
+  tts.text = "";
 };
 
 chrome.storage.onChanged.addListener((changes, namespace) => {

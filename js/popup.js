@@ -35,11 +35,3 @@ summonDingus.addEventListener('click', async () => {
     });
   });
 });
-
-chrome.storage.onChanged.addListener((changes, namespace) => {
-  if (changes.hasOwnProperty('activation')) {
-    chrome.storage.local.get('activation', (data) => {
-      document.getElementById('activation').innerText = "Activate Dingus with: " + data.activation.toString();
-    });
-  }
-});
