@@ -21,6 +21,9 @@ const run = async () => {
     }
   } else {
     console.log('Start Recording');
+    tts.text = "hello my name is dingus";
+    window.speechSynthesis.speak(tts);
+    tts.text = "";
     const response = await fetch('http://localhost:8000');
     const data = await response.json();
 

@@ -1,6 +1,6 @@
 {
-	"name": "Getting Started Example",
-	"description": "Build an Extension!",
+	"name": "Dingus",
+	"description": "Extremely novel Dingus extension. ",
 	"version": "1.0",
 	"manifest_version": 3,
 	"background": {
