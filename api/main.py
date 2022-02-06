@@ -10,8 +10,10 @@ import uvicorn
 
 
 app = FastAPI()
-tokenizer = AutoTokenizer.from_pretrained("microsoft/DialoGPT-small")
-model = AutoModelForCausalLM.from_pretrained("microsoft/DialoGPT-small")
+tokenizer = AutoTokenizer.from_pretrained(
+    "microsoft/DialoGPT-medium")  # ./phoebe
+model = AutoModelForCausalLM.from_pretrained(
+    "microsoft/DialoGPT-medium")  # ./phoebe
 chat_history_ids = None
 msg_count = 0
 
@@ -35,11 +37,6 @@ async def token():
                          json={"expires_in": 3600}).json()
 
 
-def load_tokenizer_and_model():
-    global tokenizer, model
-    t
-
-
 def generate_response(tokenizer, model, chat_round, chat_history_ids, msg):
     new_input_ids = tokenizer.encode(
         msg + tokenizer.eos_token, return_tensors='pt')
@@ -58,13 +55,8 @@ async def get_reply(msg_in: Message):
     chat_history_ids, out = generate_response(
         tokenizer, model, msg_count, chat_history_ids, msg_in.dict()['message'])
     msg_count += 1
-    if msg_count == 5:
-        msg_count = 0
-        chat_history_ids = None
     return {'reply': out}
 
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=80,
-                # ssl_keyfile=os.environ.get('SSL_KEY'), ssl_certfile=os.environ.get('SSL_CERT'),
-                reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=80, reload=True)

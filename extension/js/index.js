@@ -2,7 +2,7 @@
 let isRecording = false;
 let socket;
 let recorder;
-let activation = "novel";
+let activation = "hello";
 let tts = new SpeechSynthesisUtterance();
 
 // runs real-time transcription and handles global variables
@@ -24,7 +24,7 @@ const run = async () => {
     tts.text = "hello my name is dingus";
     window.speechSynthesis.speak(tts);
     tts.text = "";
-    const response = await fetch('http://localhost:8000');
+    const response = await fetch('http://localhost:80/api');
     const data = await response.json();
 
     if (data.error) {
@@ -32,7 +32,7 @@ const run = async () => {
     }
 
     const { token } = data;
-
+    console.log(token);
     socket = await new WebSocket(`wss://api.assemblyai.com/v2/realtime/ws?sample_rate=16000&token=${token}`);
 
     socket.onmessage = (message) => {
@@ -128,6 +128,21 @@ const handleText = (text) => {
   } else if (text.includes("subtitles")) {
     document.querySelector("button[title=\"Subtitles/closed captions (c)\"]").click();
     tts.text = "toggling subtitles";
+  } else if (text.length > 0) {
+    fetch("http://127.0.0.1:80/api/message", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        "message": text,
+      })
+    }).then(r => r.json()).then(r => {
+      console.log(r.reply);
+      tts.text = r.reply;
+      window.speechSynthesis.speak(tts);
+      tts.text = "";
+    });
   }
 
   window.speechSynthesis.speak(tts);
