@@ -21,7 +21,7 @@ function togglePlaying() {
 
 summonDingus.addEventListener('click', async () => {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  chrome.storage.sync.get(['dingus'], (data) => {
+  chrome.storage.local.get(['dingus'], (data) => {
     const updatedDingusFlag = !data.dingus;
     if (updatedDingusFlag) {
       document.getElementById('dingoBtnTxt').innerText = 'dismiss dingus';
@@ -30,8 +30,16 @@ summonDingus.addEventListener('click', async () => {
     }
     chrome.scripting.executeScript({
       target: { tabId: tab.id },
-      function: (flag) => { chrome.storage.sync.set({ dingus: flag }); },
+      function: (flag) => { chrome.storage.local.set({ dingus: flag }); },
       args: [updatedDingusFlag],
     });
   });
+});
+
+chrome.storage.onChanged.addListener((changes, namespace) => {
+  if (changes.hasOwnProperty('activation')) {
+    chrome.storage.local.get('activation', (data) => {
+      document.getElementById('activation').innerText = "Activate Dingus with: " + data.activation.toString();
+    });
+  }
 });

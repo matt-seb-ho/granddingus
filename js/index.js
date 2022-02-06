@@ -1,15 +1,13 @@
 // shit from background.js
-const color = '#FF99CC';
 let isRecording = false;
 let socket;
 let recorder;
-
-const loadedRtc = true;
+let activation = "not_an_actual_word_lol";
 
 // runs real-time transcription and handles global variables
 const run = async () => {
   if (isRecording) {
-    console.log('in if block');
+    console.log('Stop Recording');
     if (socket) {
       socket.send(JSON.stringify({ terminate_session: true }));
       socket.close();
@@ -21,7 +19,7 @@ const run = async () => {
       recorder = null;
     }
   } else {
-    console.log('in else block');
+    console.log('Start Recording');
     const response = await fetch('http://localhost:8000');
     const data = await response.json();
 
@@ -30,28 +28,20 @@ const run = async () => {
     }
 
     const { token } = data;
-    // print(token);
 
-    // establish wss with AssemblyAI (AAI) at 16000 sample rate
     socket = await new WebSocket(`wss://api.assemblyai.com/v2/realtime/ws?sample_rate=16000&token=${token}`);
 
-    // handle incoming messages to display transcription to the DOM
-    const texts = {};
-    const mostRecent = '';
     socket.onmessage = (message) => {
-      // console.log('socket onmessage');
-      const msg = '';
       const res = JSON.parse(message.data);
       if (res.message_type === 'FinalTranscript') {
-        console.log(res.text);
-        if (res.text.toLowerCase().includes('listen up')) {
-          const video = document.querySelector('video');
-          // console.log(video);
-          if (video.paused) {
-            video.play();
-          } else {
-            video.pause();
-          }
+        const text = res.text ? res.text.toLowerCase().replace(/[^\w\s]/gi, '') : '';
+        console.log(text);
+        if (text.includes("set activation to")) {
+          activation = text.replace("set activation to", "").trim();
+          console.log(activation);
+          chrome.storage.local.set({ "activation": activation });
+        } else if (text.includes(activation)) {
+          handleText(text);
         }
       }
     };
@@ -61,17 +51,13 @@ const run = async () => {
       socket.close();
     };
 
-    socket.onclose = (event) => {
-      console.log(event);
-      socket = null;
-    };
-
     socket.onopen = () => {
       // once socket is open, begin recording
       // messageEl.style.display = '';
       navigator.mediaDevices.getUserMedia({ audio: true })
         .then((stream) => {
           recorder = new RecordRTC(stream, {
+            disableLogs: true,
             type: 'audio',
             mimeType: 'audio/webm;codecs=pcm', // endpoint requires 16bit PCM audio
             recorderType: StereoAudioRecorder,
@@ -103,10 +89,23 @@ const run = async () => {
   isRecording = !isRecording;
 };
 
+const handleText = (text) => {
+  const play_pause = document.querySelector('video');
+  const vid_vol = document.querySelector('.video-stream');
+
+  if (text.includes("pause")) {
+    play_pause.pause();
+  } else if (text.includes("play")) {
+    play_pause.play();
+  } else if (text.includes("volume down")) {
+    vid_vol.volume = Math.max(0, vid_vol.volume - 0.1);
+  } else if (text.includes("volume up")) {
+    vid_vol.volume = Math.min(1, vid_vol.volume + 0.1);
+  }
+};
+
 chrome.storage.onChanged.addListener((changes, namespace) => {
-  console.log(changes);
   if (changes.hasOwnProperty('dingus')) {
-    console.log('I would run');
     run();
   }
 });
